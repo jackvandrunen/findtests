@@ -56,6 +56,11 @@ proc followDependencyTree(path: string, includes: ptr HashSet[string]) =
       includes[].incl(newInclude)
       followDependencyTree(newInclude, includes)
 
+iterator findNimFiles(root: string): string =
+  for file in walkDirRec(root):
+    if file[^4..^1] == ".nim":
+      yield file
+
 proc getRelativeImports*(path: string): HashSet[string] =
   ## Recursively determine all modules imported relatively by the given file.
   result = initSet[string]()
@@ -68,7 +73,7 @@ iterator findTests*(path: string, exclude: openarray[string]): seq[string] =
   var toExclude = initSet[string](exclude.len)
   for excludeFile in exclude:
     toExclude.incl(expandPath(excludeFile, testsDir))
-  for testSrc in walkFiles(joinPaths(testsDir, "*.nim")):
+  for testSrc in findNimFiles(testsDir):
     if toExclude.contains(testSrc):
       continue
     yield concat(@[testSrc], toSeq(getRelativeImports(testSrc).items()))

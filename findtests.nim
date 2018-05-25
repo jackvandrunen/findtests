@@ -48,11 +48,11 @@ proc expandPath(filename, root: string): string =
     joinPaths(root, filename)
 
 proc followDependencyTree(path: string, includes: ptr HashSet[string]) =
-  let imports = splitLines(execProcess("/bin/grep", @["import \\.", path], options={}))
+  let imports = map(splitLines(execProcess("/bin/grep", @["import \\.", path], options={})), proc(s: string): string = strip(s))
   let root = parentPath(path)
   for i in 0..imports.len-1:
     if imports[i].len > 0 and not includes[].contains(imports[i]):
-      let newInclude = expandPath(imports[i][7..^1] & ".nim", root)
+      let newInclude = expandPath(strip(imports[i][7..^1]) & ".nim", root)
       includes[].incl(newInclude)
       followDependencyTree(newInclude, includes)
 

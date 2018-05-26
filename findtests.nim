@@ -24,6 +24,7 @@ import strutils
 import osproc
 import os
 import sequtils
+import strformat
 
 proc joinPaths(path1, path2: string): string =
   if path1[^1] == '/':
@@ -65,6 +66,21 @@ proc getRelativeImports*(path: string): HashSet[string] =
   ## Recursively determine all modules imported relatively by the given file.
   result = initSet[string]()
   followDependencyTree(path, addr result)
+
+proc generateTestsFile*(tests_file, tests_path: string, exclude: openarray[string]) =
+  ## Find all Nim files in given directory and construct a new file which
+  ## includes all of them.
+  let testsDir = expandFilename(tests_path)
+  var toExclude = initSet[string](exclude.len)
+  for excludeFile in exclude:
+    toExclude.incl(expandPath(excludeFile, testsDir))
+  var f = open(tests_file, fmWrite)
+  for testSrc in findNimFiles(testsDir):
+    if toExclude.contains(testSrc):
+      continue
+    let m = testSrc[0..^5]
+    f.writeLine(fmt"""include "{m}" """)
+  f.close()
 
 iterator findTests*(path: string, exclude: openarray[string]): seq[string] =
   ## Find all Nim files in given directory and (recursively) their local

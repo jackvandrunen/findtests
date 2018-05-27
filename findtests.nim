@@ -39,14 +39,18 @@ proc parentPath(path: string): string =
   path[0..i]
 
 proc expandPath(filename, root: string): string =
-  if filename[0..1] == "./":
-    joinPaths(root, filename[2..^1])
-  elif filename[0..2] == "../":
-    joinPaths(parentPath(root), filename[3..^1])
-  elif filename[0] == '/':
-    filename
-  else:
-    joinPaths(root, filename)
+  var filepath = filename
+  var rootfrag = root
+  while true:
+    if filepath[0..1] == "./":
+      filepath = filepath[2..^1]
+    elif filepath[0..2] == "../":
+      filepath = filepath[3..^1]
+      rootfrag = parentPath(rootfrag)
+    elif filepath[0] == '/':
+      return filename
+    else:
+      return joinPaths(rootfrag, filepath)
 
 proc followDependencyTree(path: string, includes: ptr HashSet[string]) =
   let imports = map(splitLines(execProcess("/bin/grep", @["import \\.\\|include \\.", path], options={})), proc(s: string): string = strip(s))
